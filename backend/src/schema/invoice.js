@@ -172,7 +172,11 @@ export function parsearFacturaExtraida(entrada, config = {}) {
     confianzaPorDefecto
   );
   const total = leerCampoMonetario(
-    elegir(totalesObj, 'total', 'total_general', 'grand_total', 'importe_total', 'amount_total'),
+    // 'total_factura' lo emite el Modulo A (extraction/extract.js).
+    elegir(
+      totalesObj,
+      'total', 'total_factura', 'total_general', 'grand_total', 'importe_total', 'amount_total'
+    ),
     confianzaPorDefecto
   );
 
@@ -256,7 +260,9 @@ function parsearItem(crudo, indice, ctx) {
     { transformar: (v) => String(v).trim(), confianzaPorDefecto: ctx.confianzaPorDefecto }
   );
   const descripcion = leerCampo(
-    elegir(objeto, 'descripcion', 'description', 'detalle', 'concepto', 'producto', 'name'),
+    // 'nombre' lo emite el Modulo A (extraction/extract.js) y tambien es la clave
+    // que consume el frontend en el contrato plano.
+    elegir(objeto, 'descripcion', 'description', 'detalle', 'concepto', 'producto', 'nombre', 'name'),
     { transformar: (v) => String(v).trim(), confianzaPorDefecto: ctx.confianzaPorDefecto }
   );
   const cantidad = leerCampo(

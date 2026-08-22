@@ -45,15 +45,43 @@ export function normalizarTexto(s) {
 }
 
 /**
- * Normaliza un nombre de empresa: base + sin sufijos societarios ni palabras vacias.
+ * Une secuencias de tokens de una sola letra en un token unico.
+ *
+ * Necesario porque normalizarTexto rompe los acronimos con puntos:
+ * "S.A." -> "s a", "S.R.L." -> "s r l". Sin esto, la "s" sobrevive al filtro
+ * de sufijos societarios y ensucia la similitud de nombres.
+ *
+ * @param {string[]} tokens
+ * @returns {string[]}
+ */
+function unirIniciales(tokens) {
+  const salida = [];
+  let acumulado = '';
+  for (const token of tokens) {
+    if (token.length === 1) {
+      acumulado += token;
+      continue;
+    }
+    if (acumulado) {
+      salida.push(acumulado);
+      acumulado = '';
+    }
+    salida.push(token);
+  }
+  if (acumulado) salida.push(acumulado);
+  return salida;
+}
+
+/**
+ * Normaliza un nombre de empresa: base, acronimos unidos, sin sufijos
+ * societarios ni palabras vacias.
  * @param {unknown} s
  * @returns {string}
  */
 export function normalizarNombreEmpresa(s) {
   const base = normalizarTexto(s);
   if (!base) return '';
-  const tokens = base
-    .split(' ')
+  const tokens = unirIniciales(base.split(' ').filter(Boolean))
     .filter((t) => t && !SUFIJOS_SOCIETARIOS.has(t) && !PALABRAS_VACIAS.has(t));
   // Si el filtro se comio todo, volvemos a la base para no perder informacion.
   return tokens.length ? tokens.join(' ') : base;
