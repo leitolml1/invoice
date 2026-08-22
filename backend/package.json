@@ -1,0 +1,23 @@
+{
+  "name": "invoiceguard-backend",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "InvoiceGuard - motor de reconciliacion factura vs orden de compra. 100% local, sin cloud.",
+  "license": "MIT",
+  "engines": {
+    "node": ">=20.0.0"
+  },
+  "main": "src/index.js",
+  "exports": {
+    ".": "./src/index.js"
+  },
+  "scripts": {
+    "reconcile": "node src/cli.js reconcile",
+    "evaluate": "node src/cli.js evaluate",
+    "cases": "node src/cli.js cases",
+    "smoke": "node src/cli.js evaluate --quiet"
+  },
+  "dependencies": {},
+  "comentario_dependencias": "Capa 1 (reglas determinisiticas) no tiene dependencias. Capa 2 (semantica) usa @qvac/sdk via import dinamico opcional: instalar con `npm i @qvac/sdk` y correr con --ai."
+}
