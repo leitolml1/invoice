@@ -55,21 +55,125 @@ export function aCeldas(bloques) {
   return celdas;
 }
 
+/** Centro horizontal de una celda. @param {Celda} c @returns {number} */
+export function centroX(c) {
+  return (c.x1 + c.x2) / 2;
+}
+
+/** Centro vertical de una celda. @param {Celda} c @returns {number} */
+export function centroY(c) {
+  return (c.y1 + c.y2) / 2;
+}
+
 /**
- * Agrupa celdas en filas por solapamiento vertical.
+ * Estima la inclinacion del documento como la pendiente dy/dx de una recta
+ * ajustada por minimos cuadrados sobre los centros de un conjunto de celdas
+ * que se sabe que pertenecen a la misma linea visual.
  *
- * Dos celdas son de la misma fila si sus rangos verticales se solapan mas que
- * `solapeMinimo` de la altura de la mas baja. Es robusto a escaneos levemente
- * torcidos, donde el y de una fila varia unos pocos pixeles de izquierda a
- * derecha.
+ * Por que hace falta: en un escaneo torcido el centro vertical de una fila
+ * deriva de izquierda a derecha. Medido en factura-02-escaneada, la deriva
+ * dentro de una fila es de 25 px mientras la separacion entre filas es de
+ * 34 px. Con esa proporcion cualquier agrupamiento por cercania vertical
+ * encadena filas distintas, porque la ultima celda de una fila queda mas
+ * cerca de la primera de la siguiente que de su propio comienzo.
+ *
+ * Se le pasan las celdas del encabezado de la tabla, que son la referencia
+ * mas confiable: son una sola linea real y estan repartidas a lo ancho.
+ *
+ * @param {Celda[]} celdasDeUnaLinea
+ * @returns {number} pendiente; 0 si no hay datos suficientes
+ */
+export function estimarInclinacion(celdasDeUnaLinea) {
+  const puntos = celdasDeUnaLinea.map((c) => ({ x: centroX(c), y: centroY(c) }));
+  if (puntos.length < 2) return 0;
+
+  const n = puntos.length;
+  const mediaX = puntos.reduce((a, p) => a + p.x, 0) / n;
+  const mediaY = puntos.reduce((a, p) => a + p.y, 0) / n;
+  let num = 0;
+  let den = 0;
+  for (const p of puntos) {
+    num += (p.x - mediaX) * (p.y - mediaY);
+    den += (p.x - mediaX) ** 2;
+  }
+  if (den === 0) return 0;
+
+  const pendiente = num / den;
+  // Mas de ~11 grados no es un escaneo torcido, es otra cosa: no corregimos
+  // para no empeorar un documento que en realidad esta derecho.
+  if (!Number.isFinite(pendiente) || Math.abs(pendiente) > 0.2) return 0;
+  return pendiente;
+}
+
+/**
+ * Y de una celda corregido por inclinacion, referido a x = 0.
+ * @param {Celda} c
+ * @param {number} pendiente
+ * @returns {number}
+ */
+export function yCorregido(c, pendiente) {
+  return centroY(c) - pendiente * centroX(c);
+}
+
+/**
+ * Agrupa celdas en filas.
+ *
+ * Sin `pendiente` usa solapamiento vertical de los rangos, que alcanza para
+ * documentos derechos. Con `pendiente` agrupa por cercania de los centros
+ * verticales corregidos, que es lo unico que separa bien las filas de un
+ * escaneo torcido.
+ *
+ * El modo con pendiente compara cada celda contra el promedio corrido del
+ * grupo, no contra su extension acumulada. Esa diferencia importa: comparar
+ * contra la extension hace que el grupo crezca y absorba cada vez mas celdas,
+ * que es exactamente como las tres filas de items de factura-02 terminaban
+ * fusionadas en una.
  *
  * @param {Celda[]} celdas
- * @param {{ solapeMinimo?: number }} [opciones]
+ * @param {{ solapeMinimo?: number, pendiente?: number, toleranciaFila?: number }} [opciones]
  * @returns {Fila[]}
  */
 export function agruparEnFilas(celdas, opciones = {}) {
-  const solapeMinimo = opciones.solapeMinimo ?? 0.35;
+  const pendiente = opciones.pendiente ?? 0;
 
+  const armar = (grupos) =>
+    grupos
+      .map((g) => {
+        const celdasOrdenadas = [...g.celdas].sort((a, b) => a.x1 - b.x1);
+        return {
+          y: Math.round((g.y1 + g.y2) / 2),
+          celdas: celdasOrdenadas,
+          confianza_min: celdasOrdenadas.reduce((min, c) => Math.min(min, c.confianza), 1)
+        };
+      })
+      .sort((a, b) => a.y - b.y);
+
+  if (pendiente !== 0) {
+    const alturas = celdas.map((c) => Math.max(1, c.y2 - c.y1)).sort((a, b) => a - b);
+    const alturaMediana = alturas[Math.floor(alturas.length / 2)] ?? 20;
+    // Media altura de texto: mas chico parte filas reales, mas grande las fusiona.
+    const tolerancia = opciones.toleranciaFila ?? alturaMediana * 0.6;
+
+    const ordenadas = [...celdas].sort((a, b) => yCorregido(a, pendiente) - yCorregido(b, pendiente));
+    /** @type {{ suma: number, n: number, y1: number, y2: number, celdas: Celda[] }[]} */
+    const grupos = [];
+    for (const celda of ordenadas) {
+      const y = yCorregido(celda, pendiente);
+      const ultimo = grupos[grupos.length - 1];
+      if (ultimo && Math.abs(y - ultimo.suma / ultimo.n) <= tolerancia) {
+        ultimo.celdas.push(celda);
+        ultimo.suma += y;
+        ultimo.n += 1;
+        ultimo.y1 = Math.min(ultimo.y1, celda.y1);
+        ultimo.y2 = Math.max(ultimo.y2, celda.y2);
+      } else {
+        grupos.push({ suma: y, n: 1, y1: celda.y1, y2: celda.y2, celdas: [celda] });
+      }
+    }
+    return armar(grupos);
+  }
+
+  const solapeMinimo = opciones.solapeMinimo ?? 0.35;
   const ordenadas = [...celdas].sort((a, b) => a.y1 - b.y1 || a.x1 - b.x1);
   /** @type {{ y1: number, y2: number, celdas: Celda[] }[]} */
   const grupos = [];
@@ -95,16 +199,7 @@ export function agruparEnFilas(celdas, opciones = {}) {
     }
   }
 
-  return grupos
-    .map((g) => {
-      const celdasOrdenadas = [...g.celdas].sort((a, b) => a.x1 - b.x1);
-      return {
-        y: Math.round((g.y1 + g.y2) / 2),
-        celdas: celdasOrdenadas,
-        confianza_min: celdasOrdenadas.reduce((min, c) => Math.min(min, c.confianza), 1)
-      };
-    })
-    .sort((a, b) => a.y - b.y);
+  return armar(grupos);
 }
 
 /**

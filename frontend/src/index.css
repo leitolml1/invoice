@@ -1,16 +1,85 @@
+/* ---------------------------------------------------------------
+   Catppuccin Mocha
+   Paleta oficial: https://catppuccin.com/palette
+
+   Las --ctp-* son la paleta cruda, unico lugar del archivo con
+   hexadecimales. Debajo se mapean a roles semanticos; el resto del
+   CSS usa solo esos roles, asi cambiar de flavor (Latte, Frappe,
+   Macchiato) es reescribir un bloque y nada mas.
+   --------------------------------------------------------------- */
 :root {
+  --ctp-rosewater: #f5e0dc;
+  --ctp-flamingo: #f2cdcd;
+  --ctp-pink: #f5c2e7;
+  --ctp-mauve: #cba6f7;
+  --ctp-red: #f38ba8;
+  --ctp-maroon: #eba0ac;
+  --ctp-peach: #fab387;
+  --ctp-yellow: #f9e2af;
+  --ctp-green: #a6e3a1;
+  --ctp-teal: #94e2d5;
+  --ctp-sky: #89dceb;
+  --ctp-sapphire: #74c7ec;
+  --ctp-blue: #89b4fa;
+  --ctp-lavender: #b4befe;
+  --ctp-text: #cdd6f4;
+  --ctp-subtext1: #bac2de;
+  --ctp-subtext0: #a6adc8;
+  --ctp-overlay2: #9399b2;
+  --ctp-overlay1: #7f849c;
+  --ctp-overlay0: #6c7086;
+  --ctp-surface2: #585b70;
+  --ctp-surface1: #45475a;
+  --ctp-surface0: #313244;
+  --ctp-base: #1e1e2e;
+  --ctp-mantle: #181825;
+  --ctp-crust: #11111b;
+
   color-scheme: dark;
-  --bg: #0d1117;
-  --bg-elev: #161b22;
-  --bg-soft: #1c2330;
-  --line: #30363d;
-  --text: #e6edf3;
-  --muted: #8b949e;
-  --accent: #3fb950;
-  --warn: #d29922;
-  --danger: #f85149;
-  --review: #f0883e;
-  --focus: #58a6ff;
+
+  /* Superficies, de la pagina hacia arriba */
+  --bg: var(--ctp-mantle);
+  --bg-elev: var(--ctp-base);
+  --bg-soft: var(--ctp-surface0);
+  --bg-inset: var(--ctp-crust);
+
+  /* Bordes */
+  --line: var(--ctp-surface1);
+  --line-strong: var(--ctp-surface2);
+
+  /* Texto, de mas a menos enfasis */
+  --text-bright: var(--ctp-rosewater);
+  --text: var(--ctp-text);
+  --text-soft: var(--ctp-subtext1);
+  --muted: var(--ctp-subtext0);
+
+  /* Acentos semanticos */
+  --accent: var(--ctp-green);
+  --warn: var(--ctp-yellow);
+  --danger: var(--ctp-red);
+  --review: var(--ctp-peach);
+  --focus: var(--ctp-blue);
+
+  /* Los acentos de Mocha son pasteles claros: sobre un relleno de
+     acento va texto oscuro, no blanco. */
+  --on-accent: var(--ctp-crust);
+
+  /* Rotacion de acentos para las cards de la landing. Cuatro hues bien
+     separados en el circulo cromatico para que se distingan de un
+     vistazo. Cambiar el orden aca reordena toda la landing. */
+  --card-1: var(--ctp-mauve);
+  --card-2: var(--ctp-green);
+  --card-3: var(--ctp-sapphire);
+  --card-4: var(--ctp-peach);
+
+  /* Tintes translucidos para badges y banners. Se derivan del acento
+     para no duplicar valores. */
+  --tint-accent: color-mix(in srgb, var(--accent) 16%, transparent);
+  --tint-warn: color-mix(in srgb, var(--warn) 16%, transparent);
+  --tint-danger: color-mix(in srgb, var(--danger) 16%, transparent);
+  --tint-review: color-mix(in srgb, var(--review) 16%, transparent);
+  --tint-accent-soft: color-mix(in srgb, var(--accent) 10%, transparent);
+
   font-family: "Segoe UI", "Helvetica Neue", system-ui, sans-serif;
   line-height: 1.45;
 }
@@ -30,9 +99,51 @@ body,
 
 body {
   background:
-    radial-gradient(1200px 500px at 10% -10%, #1f3b2c55, transparent 50%),
-    radial-gradient(900px 400px at 100% 0%, #1b283855, transparent 45%),
+    radial-gradient(
+      1200px 500px at 10% -10%,
+      color-mix(in srgb, var(--ctp-green) 12%, transparent),
+      transparent 50%
+    ),
+    radial-gradient(
+      900px 400px at 100% 0%,
+      color-mix(in srgb, var(--ctp-mauve) 12%, transparent),
+      transparent 45%
+    ),
     var(--bg);
+}
+
+/* ---------- Transicion de entrada de ruta ----------
+   Se aplica al contenedor que envuelve el <Outlet /> en App.jsx. Corre
+   en la carga inicial y en cada cambio de ruta, porque el contenedor se
+   remonta via key={location.pathname}.
+
+   Solo opacidad: no mueve ni escala nada, para no alterar el layout.
+   `both` mantiene el estado inicial (opacity: 0) antes del primer frame
+   y evita que el contenido aparezca de golpe si el navegador tarda en
+   arrancar la animacion.
+
+   Nada que ver con el spinner de la pantalla de reconciliacion: ese vive
+   dentro de la ruta y se activa por estado, no por navegacion. */
+@keyframes route-fade-in {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+.route-fade {
+  animation: route-fade-in 260ms ease-out both;
+}
+
+/* Quien pidio menos movimiento al sistema operativo ve el contenido
+   directamente, sin fundido. */
+@media (prefers-reduced-motion: reduce) {
+  .route-fade {
+    animation: none;
+  }
 }
 
 .app {
@@ -82,7 +193,7 @@ body {
 }
 
 .lang-switch__btn.is-active {
-  background: #23863633;
+  background: var(--tint-accent);
   color: var(--accent);
 }
 
@@ -128,7 +239,7 @@ h1 {
 
 .dropzone {
   display: block;
-  border: 1.5px dashed #3d4a5c;
+  border: 1.5px dashed var(--line-strong);
   background: var(--bg-elev);
   border-radius: 16px;
   padding: 56px 24px;
@@ -161,7 +272,7 @@ h1 {
   border-radius: 50%;
   display: grid;
   place-items: center;
-  background: #23863633;
+  background: var(--tint-accent);
   color: var(--accent);
   font-size: 22px;
 }
@@ -212,7 +323,7 @@ h1 {
   width: 40px;
   height: 40px;
   margin: 0 auto;
-  border: 3px solid #30363d;
+  border: 3px solid var(--line);
   border-top-color: var(--accent);
   border-radius: 50%;
   animation: spin 0.9s linear infinite;
@@ -237,15 +348,15 @@ h1 {
 }
 
 .review-banner {
-  background: #3d1f12;
+  background: var(--tint-review);
   border: 1px solid var(--review);
-  color: #ffc9a3;
+  color: var(--review);
 }
 
 .ok-banner {
-  background: #16341f;
+  background: var(--tint-accent);
   border: 1px solid var(--accent);
-  color: #aff4c6;
+  color: var(--accent);
 }
 
 .review-banner span,
@@ -302,7 +413,7 @@ dd {
 
 .meta__total {
   font-size: 22px;
-  color: #f0f6fc;
+  color: var(--text-bright);
 }
 
 .items-title {
@@ -348,7 +459,7 @@ th {
   border-left-width: 5px;
   border-radius: 10px;
   padding: 12px;
-  background: #0f141b;
+  background: var(--bg-inset);
 }
 
 .disc-card--baja {
@@ -380,23 +491,23 @@ th {
 }
 
 .badge--baja {
-  background: #16341f;
-  color: #3fb950;
+  background: var(--tint-accent);
+  color: var(--accent);
 }
 
 .badge--media {
-  background: #3d2f0f;
-  color: #e3b341;
+  background: var(--tint-warn);
+  color: var(--warn);
 }
 
 .badge--alta {
-  background: #3d1418;
-  color: #ff7b72;
+  background: var(--tint-danger);
+  color: var(--danger);
 }
 
 .badge--review {
-  background: #3d1f12;
-  color: #ffc9a3;
+  background: var(--tint-review);
+  color: var(--review);
 }
 
 .disc-card__campo {
@@ -436,7 +547,7 @@ th {
 
 .disc-card__explain {
   margin: 0;
-  color: #d0d7de;
+  color: var(--text-soft);
   font-size: 14px;
 }
 
@@ -459,7 +570,7 @@ th {
 
 .navbar {
   border-bottom: 1px solid var(--line);
-  background: #0d1117cc;
+  background: color-mix(in srgb, var(--ctp-mantle) 80%, transparent);
   backdrop-filter: blur(6px);
   position: sticky;
   top: 0;
@@ -520,7 +631,7 @@ th {
 
 .navbar__link.is-active {
   color: var(--accent);
-  background: #23863626;
+  background: var(--tint-accent-soft);
 }
 
 .navbar__count {
@@ -538,9 +649,9 @@ th {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  background: #238636;
-  border-color: #2ea043;
-  color: #fff;
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--on-accent);
   font-weight: 650;
   font-size: 16px;
   padding: 13px 22px;
@@ -548,8 +659,9 @@ th {
 }
 
 .btn--cta:hover {
-  background: #2ea043;
-  border-color: #3fb950;
+  background: var(--accent);
+  border-color: var(--accent);
+  filter: brightness(1.08);
 }
 
 .btn--ghost {
@@ -581,28 +693,142 @@ th {
 
 /* ---------- Landing ---------- */
 
+/* .landing es full width y opaco a proposito: es la superficie que tapa
+   al hero mientras este queda pinneado y se achica. Sin fondo propio, en
+   pantallas anchas se veria el hero por detras de la columna. */
 .landing {
+  position: relative;
+  z-index: 1;
+  background: var(--bg);
+}
+
+.landing__inner {
   max-width: 1120px;
   margin: 0 auto;
   padding: 0 24px 48px;
 }
 
-.hero {
-  position: relative;
-  text-align: center;
-  padding: 72px 8px 64px;
+/* Movimiento complementario al del hero: mientras ese se achica, cada
+   seccion de cards entra creciendo. Usa view() y no scroll(), porque el
+   rango se mide contra la posicion de cada elemento en la ventana, asi
+   que cada seccion se anima cuando le toca entrar sin depender del largo
+   total de la pagina. */
+@keyframes section-rise {
+  from {
+    transform: scale(0.94);
+    opacity: 0.55;
+  }
+
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
 }
 
+/* ---------- Hero ----------
+   Ocupa la ventana completa y queda por debajo de .landing en el eje z.
+   El pin (position: sticky) y el shrink se agregan mas abajo, solo en
+   pantallas grandes, como mejora progresiva: la base es una seccion
+   normal a pantalla completa que funciona en cualquier browser. */
+.hero {
+  position: relative;
+  z-index: 0;
+  min-height: 100svh;
+  display: grid;
+  place-content: center;
+  text-align: center;
+  padding: 72px 8px 64px;
+
+  /* Fondo generado con tres radial-gradient de la paleta sobre base.
+     Sin archivos de imagen.
+
+     Es estatico a proposito. Primero lo hice derivar lentamente con un
+     pseudo-elemento sobredimensionado animado por transform, y medido con
+     Playwright resulto caro: 174 de 354 frames por encima de 32ms, y peor
+     todavia en reposo (189/354) que scrolleando, porque una capa de
+     gradiente del tamanio de la ventana se re-rasteriza en cada frame.
+     Probe will-change, contain: paint, translate solo, y derivar la
+     opacidad en lugar del transform; ninguna bajo de 63/354. Estatico da
+     0/354. El movimiento del hero lo aporta el shrink de scroll, que no
+     cuesta nada medible. */
+  background:
+    radial-gradient(
+      58% 62% at 18% 22%,
+      color-mix(in srgb, var(--ctp-blue) 26%, transparent),
+      transparent 70%
+    ),
+    radial-gradient(
+      52% 56% at 82% 18%,
+      color-mix(in srgb, var(--ctp-mauve) 24%, transparent),
+      transparent 68%
+    ),
+    radial-gradient(
+      64% 60% at 50% 88%,
+      color-mix(in srgb, var(--ctp-lavender) 20%, transparent),
+      transparent 72%
+    ),
+    var(--ctp-base);
+}
+
+.hero__inner {
+  max-width: 1120px;
+  margin: 0 auto;
+  padding: 0 16px;
+}
+
+/* El shrink: de tamanio completo a 0.82 con un fade leve, atado al
+   progreso de scroll. Solo escala y opacidad, ambas compositables. */
+@keyframes hero-shrink {
+  to {
+    transform: scale(0.82);
+    opacity: 0.55;
+  }
+}
+
+/* El pin arranca en tablet. En mobile el hero queda como seccion normal:
+   mas predecible, y evita el conflicto clasico de sticky con la barra de
+   direcciones que aparece y desaparece. */
+@media (min-width: 701px) {
+  .hero {
+    position: sticky;
+    top: 0;
+  }
+}
+
+/* La animacion de scroll se aplica solo si el browser la soporta, solo
+   desde tablet, y solo si el usuario no pidio menos movimiento. Si algo
+   de eso falla, queda el hero a pantalla completa sin efecto. */
+@supports (animation-timeline: scroll()) {
+  @media (min-width: 701px) and (prefers-reduced-motion: no-preference) {
+    .hero {
+      animation: hero-shrink linear both;
+      animation-timeline: scroll(root block);
+
+      /* El rango va en porcentaje del scroll disponible, no en vh. Con un
+         largo fijo (100vh) el efecto no alcanzaba a completarse: esta
+         pagina solo tiene ~658px de scroll en 1280x800, asi que el shrink
+         se quedaba a mitad de camino. En porcentaje se adapta al alto real
+         del contenido y siempre termina, con margen de sobra. */
+      animation-range: 0% 70%;
+    }
+  }
+}
+
+/* Se ancla al hero completo, no a .hero__inner: ese contenedor esta
+   centrado verticalmente y colapsa al alto del contenido, asi que
+   posicionar contra el dejaba el switch pegado al titulo.
+   El right alinea con el borde de la columna de 1120px en pantallas
+   anchas, y deja 24px de aire en las angostas. */
 .hero__lang {
   position: absolute;
-  top: 20px;
-  right: 8px;
+  top: 24px;
+  right: max(24px, calc(50% - 560px));
 }
 
 .hero__badge {
   display: inline-block;
-  border: 1px solid #2ea04366;
-  background: #23863622;
+  border: 1px solid color-mix(in srgb, var(--accent) 40%, transparent);
+  background: var(--tint-accent-soft);
   color: var(--accent);
   border-radius: 999px;
   padding: 5px 12px;
@@ -624,7 +850,7 @@ th {
   max-width: 34ch;
   font-size: clamp(18px, 2.4vw, 23px);
   font-weight: 600;
-  color: #f0f6fc;
+  color: var(--text-bright);
 }
 
 .hero__body {
@@ -645,6 +871,19 @@ th {
   padding: 24px 0 8px;
 }
 
+/* Mismos guards que el hero: solo con soporte, solo desde tablet y solo
+   si no se pidio menos movimiento. Sin eso, las secciones se ven planas
+   y a escala 1, que es el estado final de todos modos. */
+@supports (animation-timeline: view()) {
+  @media (min-width: 701px) and (prefers-reduced-motion: no-preference) {
+    .landing__inner > .section {
+      animation: section-rise linear both;
+      animation-timeline: view();
+      animation-range: entry 10% entry 90%;
+    }
+  }
+}
+
 .section__title {
   margin: 0 0 18px;
   font-size: 20px;
@@ -657,10 +896,37 @@ th {
 }
 
 .benefit-card {
+  /* Fallback si alguna vez hay una quinta card sin color asignado. */
+  --card-accent: var(--card-1);
   background: var(--bg-elev);
-  border: 1px solid var(--line);
+  border: 1px solid color-mix(in srgb, var(--card-accent) 55%, transparent);
   border-radius: 14px;
   padding: 18px;
+  box-shadow: 0 8px 22px -16px color-mix(in srgb, var(--card-accent) 60%, transparent);
+  transition:
+    border-color 0.15s ease,
+    box-shadow 0.15s ease;
+}
+
+.benefit-card:nth-child(4n + 1) {
+  --card-accent: var(--card-1);
+}
+
+.benefit-card:nth-child(4n + 2) {
+  --card-accent: var(--card-2);
+}
+
+.benefit-card:nth-child(4n + 3) {
+  --card-accent: var(--card-3);
+}
+
+.benefit-card:nth-child(4n + 4) {
+  --card-accent: var(--card-4);
+}
+
+.benefit-card:hover {
+  border-color: var(--card-accent);
+  box-shadow: 0 10px 26px -14px color-mix(in srgb, var(--card-accent) 70%, transparent);
 }
 
 .benefit-card__icon {
@@ -689,12 +955,38 @@ th {
 }
 
 .step {
+  --card-accent: var(--card-1);
   display: flex;
   gap: 14px;
   background: var(--bg-elev);
-  border: 1px solid var(--line);
+  border: 1px solid color-mix(in srgb, var(--card-accent) 55%, transparent);
   border-radius: 14px;
   padding: 18px;
+  box-shadow: 0 8px 22px -16px color-mix(in srgb, var(--card-accent) 60%, transparent);
+  transition:
+    border-color 0.15s ease,
+    box-shadow 0.15s ease;
+}
+
+.step:nth-child(4n + 1) {
+  --card-accent: var(--card-1);
+}
+
+.step:nth-child(4n + 2) {
+  --card-accent: var(--card-2);
+}
+
+.step:nth-child(4n + 3) {
+  --card-accent: var(--card-3);
+}
+
+.step:nth-child(4n + 4) {
+  --card-accent: var(--card-4);
+}
+
+.step:hover {
+  border-color: var(--card-accent);
+  box-shadow: 0 10px 26px -14px color-mix(in srgb, var(--card-accent) 70%, transparent);
 }
 
 .step__num {
@@ -704,8 +996,8 @@ th {
   border-radius: 50%;
   display: grid;
   place-items: center;
-  background: #23863633;
-  color: var(--accent);
+  background: color-mix(in srgb, var(--card-accent) 16%, transparent);
+  color: var(--card-accent);
   font-weight: 700;
 }
 
@@ -794,7 +1086,7 @@ th {
 
 .prose__block p {
   margin: 0;
-  color: #c9d1d9;
+  color: var(--text-soft);
   max-width: 78ch;
 }
 

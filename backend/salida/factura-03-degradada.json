@@ -1,0 +1,261 @@
+{
+  "schema_version": "1.0.0",
+  "documento_id": "A-OOO|-00099",
+  "tipo_documento": "factura",
+  "origen": {
+    "archivo": "factura-03-degradada.png",
+    "formato": "png",
+    "bytes": 1173276,
+    "motor": "qvac",
+    "modelo_ocr": "OCR_LATIN (ggml-ocr)",
+    "modelo_estructurador": "qwen3-1.7b-q4",
+    "local": true
+  },
+  "proveedor": {
+    "nombre": {
+      "valor": "Distribuidora del Sur SA",
+      "confianza": 0.996,
+      "needs_review": false,
+      "texto_crudo": "Distribuidora del Sur SA",
+      "verificado_en_ocr": true
+    },
+    "identificacion_fiscal": {
+      "valor": "CUIT' 30-71234567-9",
+      "confianza": 0.588,
+      "needs_review": true,
+      "texto_crudo": "CUIT' 30-71234567-9",
+      "verificado_en_ocr": true
+    }
+  },
+  "numero_factura": {
+    "valor": "A-OOO|-00099",
+    "confianza": 0.327,
+    "needs_review": true,
+    "texto_crudo": "A-OOO|-00099",
+    "verificado_en_ocr": true
+  },
+  "fecha": {
+    "valor": "18/07/2026",
+    "confianza": 0.559,
+    "needs_review": true,
+    "texto_crudo": "Fecha; 18/07/2026",
+    "verificado_en_ocr": true
+  },
+  "moneda": {
+    "valor": "USD",
+    "confianza": 0.866,
+    "needs_review": false,
+    "texto_crudo": "Moneda: USD",
+    "verificado_en_ocr": true
+  },
+  "orden_compra_referencia": {
+    "valor": "PO-2026-0001",
+    "confianza": 0.838,
+    "needs_review": false,
+    "texto_crudo": "Orden de compra: PO-2026-0001",
+    "verificado_en_ocr": true
+  },
+  "items": [
+    {
+      "linea": 1,
+      "codigo": {
+        "valor": "SKU-100",
+        "confianza": 0.999,
+        "needs_review": false,
+        "texto_crudo": "SKU-100",
+        "verificado_en_ocr": true
+      },
+      "nombre": {
+        "valor": "Cable UTP Cat6 305m",
+        "confianza": 0.709,
+        "needs_review": true,
+        "texto_crudo": "Cable UTP Cat6 305m",
+        "verificado_en_ocr": true
+      },
+      "cantidad": {
+        "valor": 12,
+        "confianza": 1,
+        "needs_review": true,
+        "texto_crudo": "12",
+        "verificado_en_ocr": true
+      },
+      "unidad": {
+        "valor": null,
+        "confianza": 0,
+        "needs_review": true,
+        "texto_crudo": null,
+        "verificado_en_ocr": false
+      },
+      "precio_unitario": {
+        "valor": 85.5,
+        "confianza": 0.725,
+        "needs_review": true,
+        "texto_crudo": "85 .50",
+        "verificado_en_ocr": true
+      },
+      "total": {
+        "valor": 1026,
+        "confianza": 0.997,
+        "needs_review": false,
+        "texto_crudo": "1026.00",
+        "verificado_en_ocr": true
+      }
+    },
+    {
+      "linea": 2,
+      "codigo": {
+        "valor": "SKU 200",
+        "confianza": 0.2,
+        "needs_review": true,
+        "texto_crudo": null,
+        "verificado_en_ocr": false
+      },
+      "nombre": {
+        "valor": "Switch 24 puertos Gigabit",
+        "confianza": 0.977,
+        "needs_review": false,
+        "texto_crudo": "Switch 24 puertos Gigabit",
+        "verificado_en_ocr": true
+      },
+      "cantidad": {
+        "valor": null,
+        "confianza": 0,
+        "needs_review": true,
+        "texto_crudo": null,
+        "verificado_en_ocr": false
+      },
+      "unidad": {
+        "valor": null,
+        "confianza": 0,
+        "needs_review": true,
+        "texto_crudo": null,
+        "verificado_en_ocr": false
+      },
+      "precio_unitario": {
+        "valor": 210,
+        "confianza": 0.996,
+        "needs_review": false,
+        "texto_crudo": "210.00",
+        "verificado_en_ocr": true
+      },
+      "total": {
+        "valor": 420,
+        "confianza": 0.96,
+        "needs_review": false,
+        "texto_crudo": "420.00",
+        "verificado_en_ocr": true
+      }
+    },
+    {
+      "linea": 3,
+      "codigo": {
+        "valor": "SKU-300",
+        "confianza": 0.979,
+        "needs_review": false,
+        "texto_crudo": "SKU-300",
+        "verificado_en_ocr": true
+      },
+      "nombre": {
+        "valor": "Patch panel 24 bocas",
+        "confianza": 0.2,
+        "needs_review": true,
+        "texto_crudo": null,
+        "verificado_en_ocr": false
+      },
+      "cantidad": {
+        "valor": null,
+        "confianza": 0,
+        "needs_review": true,
+        "texto_crudo": null,
+        "verificado_en_ocr": false
+      },
+      "unidad": {
+        "valor": null,
+        "confianza": 0,
+        "needs_review": true,
+        "texto_crudo": null,
+        "verificado_en_ocr": false
+      },
+      "precio_unitario": {
+        "valor": 49,
+        "confianza": 0.97,
+        "needs_review": false,
+        "texto_crudo": "49.00",
+        "verificado_en_ocr": true
+      },
+      "total": {
+        "valor": 196,
+        "confianza": 0.777,
+        "needs_review": false,
+        "texto_crudo": "196 .00",
+        "verificado_en_ocr": true
+      }
+    }
+  ],
+  "totales": {
+    "subtotal": {
+      "valor": 1642,
+      "confianza": 0.994,
+      "needs_review": false,
+      "texto_crudo": "1642.00",
+      "verificado_en_ocr": true
+    },
+    "impuestos": {
+      "valor": 344.82,
+      "confianza": 0.995,
+      "needs_review": false,
+      "texto_crudo": "344.82",
+      "verificado_en_ocr": true
+    },
+    "total_factura": {
+      "valor": 1986.82,
+      "confianza": 0.2,
+      "needs_review": true,
+      "texto_crudo": null,
+      "verificado_en_ocr": false
+    }
+  },
+  "needs_review": true,
+  "confianza_global": 0.766,
+  "extraccion": {
+    "ocr": {
+      "bloques": 44,
+      "filas": 15,
+      "duracion_ms": 0,
+      "stats": null
+    },
+    "tabla": {
+      "inclinacion_estimada": -0.01975,
+      "encabezado_detectado": true,
+      "columnas": [
+        "codigo",
+        "descripcion",
+        "cantidad",
+        "precio_unitario",
+        "total"
+      ],
+      "filas_items": 3
+    },
+    "llm": {
+      "duracion_ms": 30956,
+      "intentos_usados": 1,
+      "tokens_por_segundo": 16.475497576022423,
+      "backend": "gpu"
+    },
+    "campos_inseguros_declarados": [
+      "items[0].cantidad",
+      "items[0].unidad",
+      "items[1].cantidad",
+      "items[1].unidad",
+      "items[2].cantidad",
+      "items[2].unidad"
+    ],
+    "advertencias": [
+      "items[1].codigo: el valor \"SKU 200\" no aparece en ningun bloque leido por el OCR; podria ser una invencion del modelo. Marcado para revision.",
+      "items[2].nombre: el valor \"Patch panel 24 bocas\" no aparece en ningun bloque leido por el OCR; podria ser una invencion del modelo. Marcado para revision.",
+      "total_factura: el valor 1986.82 no aparece en ningun bloque leido por el OCR; podria ser una invencion del modelo. Marcado para revision."
+    ],
+    "duracion_total_ms": 30962,
+    "texto_ocr": "DATOS DEL DOCUMENTO:\nDistribuidora del Sur SA\nCUIT' 30-71234567-9\nSiempreviva 1234 | Buenos Aires | Argenuna\nFACTURA | Nro | A-OOO|-00099 | Fecha; 18/07/2026\nOrden de compra: PO-2026-0001\nMoneda: USD\nSubtotal: | 1642.00\nIVA 21%: | 344.82\nTOTAL: | 1986,82\nCondicionos | de pago | 30 | dias fecha Iactura\nDocurnento | generado  electronicamente\n\nTABLA DE ITEMS (columnas ya resueltas por posicion, una linea por item):\ncodigo | descripcion | cantidad | precio_unitario | total\nSKU-100 | Cable UTP Cat6 305m | 12 | 85.50 | 1026.00\nSKU 200 | Switch 24 puertos Gigabit |  | 210.00 | 420.00\nSKU-300 | Patch panel 24 bocas |  | 49.00 | 196.00"
+  }
+}

@@ -52,7 +52,10 @@ export const CONFIG_LLM_POR_DEFECTO = Object.freeze({
  * Instruccion del sistema. La regla 1 es la que pide el enunciado: el modelo
  * debe declarar inseguridad en vez de inventar un valor.
  */
-const INSTRUCCIONES = `Sos un extractor de datos de facturas. Recibis el texto de una factura leido por OCR, una linea por fila del documento. Cada celda viene como TEXTO@xN, donde N es la coordenada horizontal en pixeles: te sirve para saber que celdas pertenecen a la misma columna en filas distintas.
+const INSTRUCCIONES = `Sos un extractor de datos de facturas. Recibis el texto de una factura leido por OCR, dividido en dos bloques:
+
+- DATOS DEL DOCUMENTO: los renglones que no forman parte de la tabla de items. Las celdas de un mismo renglon van separadas por " | ".
+- TABLA DE ITEMS: la tabla con las columnas YA RESUELTAS por posicion en la hoja. La primera linea son los nombres de columna y cada linea siguiente es exactamente un item.
 
 Devolve UNICAMENTE un objeto JSON valido. Sin explicaciones, sin markdown, sin bloques de codigo.
 
@@ -76,11 +79,12 @@ Forma exacta del JSON:
 
 REGLAS CRITICAS, en orden de prioridad:
 1. NUNCA inventes un valor. Si un dato no aparece en el texto, o aparece cortado, borroso o ambiguo, poné null y agregá el nombre del campo en "campos_inseguros". Es correcto y esperado devolver null.
-2. Copiá los numeros EXACTAMENTE como figuran en el texto. No recalcules, no completes digitos que falten, no redondees, no corrijas.
-3. Si la cantidad de un item no aparece en su fila, poné "cantidad": null y agregá "items[N].cantidad" a campos_inseguros. NO la deduzcas dividiendo el importe por el precio unitario.
-4. Una fila de la tabla es un item. No fusiones dos items en uno ni partas uno en dos.
-5. En "campos_inseguros" usá el nombre del campo de nivel superior (ej: "fecha") o la ruta del item (ej: "items[0].cantidad").
-6. Los importes van como numero sin simbolo de moneda ni separador de miles: 1026.00, no "$ 1.026,00".`;
+2. Copiá los valores EXACTAMENTE como figuran en el texto recibido, caracter por caracter. No recalcules, no completes digitos que falten, no redondees, no corrijas, no agregues nada que no este en el texto.
+3. Cada linea de TABLA DE ITEMS es un item, en el mismo orden en que aparece. No fusiones dos lineas en un item ni partas una linea en dos. Copiá cada celda al campo que lleva el nombre de su columna.
+4. Una celda vacia en TABLA DE ITEMS significa que el OCR no leyo ese dato. Poné null y agregá la ruta a "campos_inseguros". NO lo deduzcas: no dividas el importe por el precio unitario ni al reves.
+5. Los separadores " | " y los nombres de columna son parte del formato, no del contenido. Nunca los incluyas dentro de un valor.
+6. En "campos_inseguros" usá el nombre del campo de nivel superior (ej: "fecha") o la ruta del item (ej: "items[0].cantidad").
+7. Los importes van como numero sin simbolo de moneda ni separador de miles: 1026.00, no "$ 1.026,00".`;
 
 /**
  * Carga (o reusa) el modelo del estructurador.
@@ -194,16 +198,18 @@ export function extraerJson(texto) {
 }
 
 /**
- * Pide al modelo el JSON estructurado a partir del texto tabular del OCR.
+ * Pide al modelo el JSON estructurado a partir del texto del documento.
  *
- * @param {string} textoTabla salida de layout.filasATexto()
+ * @param {string} textoDocumento los dos bloques ya armados por extract.js:
+ *   "DATOS DEL DOCUMENTO" y "TABLA DE ITEMS". Sin anotaciones de coordenadas:
+ *   las columnas ya vienen resueltas por table.js.
  * @param {object} [opciones]
  * @param {string} [opciones.modelo]
  * @param {number} [opciones.ctx_size]
  * @param {number} [opciones.intentos]
  * @returns {Promise<{ datos: object, duracion_ms: number, stats: object|undefined, intentos_usados: number, salida_cruda: string }>}
  */
-export async function estructurar(textoTabla, opciones = {}) {
+export async function estructurar(textoDocumento, opciones = {}) {
   const sdk = await cargarSdk();
   const modelId = await cargarModeloEstructurador(opciones);
   const maxIntentos = opciones.intentos ?? CONFIG_LLM_POR_DEFECTO.intentos;
@@ -223,7 +229,7 @@ export async function estructurar(textoTabla, opciones = {}) {
         role: 'user',
         content:
           `${INSTRUCCIONES}${refuerzo}\n\n` +
-          `Texto de la factura leido por OCR:\n<<<\n${textoTabla}\n>>>\n\n/no_think`
+          `Factura leida por OCR:\n<<<\n${textoDocumento}\n>>>\n\n/no_think`
       }
     ];
 

@@ -26,7 +26,8 @@ import path from 'node:path';
 import { ErrorExtraccion, ErrorFormatoNoSoportado } from './errors.js';
 import { ejecutarOcr } from './ocrEngine.js';
 import { estructurar } from './structurer.js';
-import { aCeldas, agruparEnFilas, filasATexto, confianzaDeValor } from './layout.js';
+import { aCeldas, agruparEnFilas, confianzaDeValor, estimarInclinacion } from './layout.js';
+import { reconstruirTabla, construirEntradaLlm } from './table.js';
 
 export const VERSION_EXTRACCION = '1.0.0';
 
@@ -131,6 +132,8 @@ function aNumeroONull(v) {
  * @param {string} [opciones.documentoId]
  * @param {number} [opciones.umbralConfianza]
  * @param {object} [opciones.ocr] overrides de modelConfig del OCR
+ * @param {import('./layout.js').BloqueOcr[]} [opciones.bloquesOcr] bloques ya
+ *   obtenidos; si vienen, no se carga ni se ejecuta el motor de OCR
  * @param {object} [opciones.llm] overrides del estructurador ({ modelo, ctx_size, intentos })
  * @returns {Promise<object>} factura con campos envueltos, lista para parsearFacturaExtraida()
  */
@@ -179,7 +182,12 @@ export async function extraerFactura(entrada, opciones = {}) {
   }
 
   // --- 2) OCR ---
-  const resultadoOcr = await ejecutarOcr(buffer, { modelConfig: opciones.ocr });
+  // `bloquesOcr` permite inyectar bloques ya obtenidos y saltear el motor. Se
+  // usa para probar el resto del pipeline sin cargar el modelo de OCR, que en
+  // maquinas con poca RAM no puede convivir con el del LLM.
+  const resultadoOcr = opciones.bloquesOcr
+    ? { bloques: opciones.bloquesOcr, stats: null, duracion_ms: 0, modelId: 'inyectado' }
+    : await ejecutarOcr(buffer, { modelConfig: opciones.ocr });
   const celdas = aCeldas(resultadoOcr.bloques);
   if (!celdas.length) {
     throw new ErrorExtraccion(
@@ -189,12 +197,38 @@ export async function extraerFactura(entrada, opciones = {}) {
     );
   }
 
-  // --- 3) Layout determinisitico ---
-  const filas = agruparEnFilas(celdas);
-  const textoTabla = filasATexto(filas);
+  // --- 3) Layout determinisitico: filas, inclinacion y bandas de columna ---
+  //
+  // Son dos pasadas a proposito. Para corregir la inclinacion del escaneo hace
+  // falta una linea de referencia que se sepa horizontal, y la mejor candidata
+  // es el encabezado de la tabla; pero para encontrar el encabezado hay que
+  // haber agrupado filas antes. Asi que se agrupa de forma tosca, se ubica el
+  // encabezado, se mide la pendiente sobre sus celdas y se reagrupa corregido.
+  const filasCrudas = agruparEnFilas(celdas);
+  const tablaCruda = reconstruirTabla(filasCrudas);
+
+  let pendiente = 0;
+  if (tablaCruda.encabezado) {
+    const celdasEncabezado = filasCrudas[tablaCruda.encabezado.indice].celdas.filter((c) =>
+      tablaCruda.encabezado.columnas.some((col) => col.x1 === c.x1 && col.x2 === c.x2)
+    );
+    pendiente = estimarInclinacion(celdasEncabezado);
+  }
+
+  const filas = pendiente !== 0 ? agruparEnFilas(celdas, { pendiente }) : filasCrudas;
+  const tabla = pendiente !== 0 ? reconstruirTabla(filas) : tablaCruda;
+
+  if (!tabla.encabezado) {
+    advertencias.push(
+      'No se encontro la fila de encabezados de la tabla de items, asi que las columnas no se ' +
+        'pudieron resolver por posicion. Los items quedan a criterio del modelo y son menos confiables.'
+    );
+  }
+
+  const textoDocumento = construirEntradaLlm(filas, tabla);
 
   // --- 4) Estructuracion con LLM local ---
-  const resultadoLlm = await estructurar(textoTabla, opciones.llm ?? {});
+  const resultadoLlm = await estructurar(textoDocumento, opciones.llm ?? {});
   const datos = resultadoLlm.datos ?? {};
 
   const inseguros = new Set(
@@ -330,6 +364,12 @@ export async function extraerFactura(entrada, opciones = {}) {
         duracion_ms: resultadoOcr.duracion_ms,
         stats: resultadoOcr.stats ?? null
       },
+      tabla: {
+        inclinacion_estimada: Number(pendiente.toFixed(5)),
+        encabezado_detectado: Boolean(tabla.encabezado),
+        columnas: tabla.encabezado?.columnas.map((c) => c.rol) ?? [],
+        filas_items: tabla.items.length
+      },
       llm: {
         duracion_ms: resultadoLlm.duracion_ms,
         intentos_usados: resultadoLlm.intentos_usados,
@@ -339,7 +379,7 @@ export async function extraerFactura(entrada, opciones = {}) {
       campos_inseguros_declarados: [...inseguros],
       advertencias,
       duracion_total_ms: Date.now() - inicioTotal,
-      texto_ocr: textoTabla
+      texto_ocr: textoDocumento
     }
   };
 }
