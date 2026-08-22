@@ -162,14 +162,37 @@ const upload = multer({
   limits: { fileSize: 25 * 1024 * 1024 }
 });
 
+// --- CORS ---------------------------------------------------------------------
+// Lista blanca explicita, nunca wildcard ni reflejo del Origin recibido.
+//
+// Los dos valores por defecto son el mismo servidor de Vite: se sirve en
+// 127.0.0.1:5173, y el browser manda ese host literal en el Origin. Dejar solo
+// "localhost" haria fallar el flujo real.
+//
+// Vale aclarar cuando se ejercita esto: en desarrollo el browser pega a
+// 127.0.0.1:5173 y Vite reenvia a 3001, asi que la request al backend es
+// server-to-server. Pero el POST del browser si lleva Origin (la spec lo exige
+// para metodos distintos de GET/HEAD) y el proxy lo reenvia, o sea que la lista
+// blanca se evalua de verdad incluso con el proxy en medio.
+//
+// Para sumar una maquina de la red local durante el demo, se agrega el origen
+// concreto por env, separado por comas y con protocolo y puerto:
+//   ORIGENES=http://127.0.0.1:5173,http://192.168.1.40:5173 npm start
 app.use(
   cors({
     origin: (origen, cb) => {
-      // Sin Origin (curl, same-origin) se permite. Con Origin, tiene que estar
-      // en la lista blanca.
-      if (!origen || ORIGENES.includes(origen)) return cb(null, true);
+      // Requests sin cabecera Origin (curl, server-to-server) se permiten: no
+      // son de browser, y CORS no es un control de acceso para esos casos.
+      if (!origen) return cb(null, true);
+      if (ORIGENES.includes(origen)) return cb(null, true);
       cb(new Error(`Origen no permitido: ${origen}`));
-    }
+    },
+    // El unico endpoint que el frontend consume es POST /reconcile.
+    methods: ['POST'],
+    allowedHeaders: ['Content-Type'],
+    // No se usan cookies ni Authorization: sin credenciales.
+    credentials: false,
+    optionsSuccessStatus: 204
   })
 );
 
@@ -240,8 +263,13 @@ app.post('/reconcile', upload.single('factura'), async (req, res) => {
 
 // Handler de errores de multer y CORS.
 app.use((error, _req, res, _next) => {
-  const codigo = error?.code === 'LIMIT_FILE_SIZE' ? 413 : 400;
-  res.status(codigo).type('text/plain').send(error?.message ?? 'Request inválido.');
+  const mensaje = error?.message ?? 'Request inválido.';
+  let codigo = 400;
+  if (error?.code === 'LIMIT_FILE_SIZE') codigo = 413;
+  // Origen fuera de la lista blanca: es una negacion de permiso, no un request
+  // mal formado.
+  else if (mensaje.startsWith('Origen no permitido')) codigo = 403;
+  res.status(codigo).type('text/plain').send(mensaje);
 });
 
 async function main() {
