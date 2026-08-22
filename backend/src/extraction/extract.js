@@ -28,6 +28,7 @@ import { ejecutarOcr } from './ocrEngine.js';
 import { estructurar } from './structurer.js';
 import { aCeldas, agruparEnFilas, confianzaDeValor, estimarInclinacion } from './layout.js';
 import { reconstruirTabla, construirEntradaLlm } from './table.js';
+import { rasterizarPrimeraPaginaPdf } from './pdf.js';
 
 export const VERSION_EXTRACCION = '1.0.0';
 
@@ -166,17 +167,27 @@ export async function extraerFactura(entrada, opciones = {}) {
     throw new ErrorExtraccion('El archivo esta vacio.', { codigo: 'ARCHIVO_VACIO' });
   }
 
-  const formato = detectarFormato(buffer);
+  const formatoOriginal = detectarFormato(buffer);
+  let formato = formatoOriginal;
+
   if (formato === 'pdf') {
-    throw new ErrorFormatoNoSoportado(
-      'El OCR de QVAC recibe imagenes, no PDF. Este backend no incluye rasterizado de PDF, ' +
-        'asi que hay que convertir la pagina a PNG/JPG antes de subirla.',
-      { formato, codigo: 'PDF_NO_SOPORTADO' }
+    // El OCR de QVAC recibe imagenes, no PDF: rasterizamos la primera pagina a
+    // PNG con mupdf.js (WASM, 100% local, sin red) y seguimos el pipeline de
+    // siempre. Si el PDF esta corrupto o vacio, mupdf tira su propio error.
+    try {
+      buffer = rasterizarPrimeraPaginaPdf(buffer);
+    } catch (error) {
+      throw new ErrorExtraccion(`No se pudo rasterizar el PDF: ${error?.message}`, {
+        codigo: 'PDF_ILEGIBLE'
+      });
+    }
+    formato = 'png';
+    advertencias.push(
+      'El archivo subido era un PDF: se proceso solo la primera pagina, rasterizada a PNG antes del OCR.'
     );
-  }
-  if (!FORMATOS_SOPORTADOS.has(formato)) {
+  } else if (!FORMATOS_SOPORTADOS.has(formato)) {
     throw new ErrorFormatoNoSoportado(
-      `Formato de archivo no soportado (detectado: ${formato}). Se aceptan PNG, JPEG y BMP.`,
+      `Formato de archivo no soportado (detectado: ${formato}). Se aceptan PNG, JPEG, BMP y PDF.`,
       { formato }
     );
   }
@@ -225,6 +236,24 @@ export async function extraerFactura(entrada, opciones = {}) {
     );
   }
 
+  // La guarda anti-alucinacion (confianzaDeValor, mas abajo) busca el valor
+  // devuelto por el LLM entre los bloques sueltos que entrego el OCR. Pero un
+  // valor de item como "Cable UTP Cat6 305m" no vive en ningun bloque suelto:
+  // vive repartido en varios ("Cable", "UTP", "Cat6", "305m") que recien se
+  // concatenan aca, por banda de columna. Sin este corpus adicional, la guarda
+  // nunca encuentra el valor completo y marca un falso positivo de invencion.
+  // Se arma solo con las filas de items (donde ocurre el fraccionamiento) y se
+  // suma al de celdas sueltas, nunca lo reemplaza.
+  const bloquesBandaItems = tabla.items.flatMap((item) =>
+    Object.entries(item.valores)
+      .filter(([, texto]) => texto)
+      .map(([rol, texto]) => ({
+        texto,
+        confianza: item.confianzas[rol] ?? item.confianza_min
+      }))
+  );
+  const celdasParaItems = celdas.concat(bloquesBandaItems);
+
   const textoDocumento = construirEntradaLlm(filas, tabla);
 
   // --- 4) Estructuracion con LLM local ---
@@ -268,15 +297,18 @@ export async function extraerFactura(entrada, opciones = {}) {
     const precio = aNumeroONull(it.precio_unitario);
     const total = aNumeroONull(it.total);
 
-    const campoCantidad = construirCampo(cantidad, celdas, {
+    const campoCantidad = construirCampo(cantidad, celdasParaItems, {
       ...ctxBase,
       campo: `${prefijo}.cantidad`
     });
-    const campoPrecio = construirCampo(precio, celdas, {
+    const campoPrecio = construirCampo(precio, celdasParaItems, {
       ...ctxBase,
       campo: `${prefijo}.precio_unitario`
     });
-    const campoTotal = construirCampo(total, celdas, { ...ctxBase, campo: `${prefijo}.total` });
+    const campoTotal = construirCampo(total, celdasParaItems, {
+      ...ctxBase,
+      campo: `${prefijo}.total`
+    });
 
     // Chequeo aritmetico determinisitico: si cantidad x precio no da el importe,
     // alguno de los tres esta mal leido. Marcamos los tres para revision.
@@ -296,10 +328,19 @@ export async function extraerFactura(entrada, opciones = {}) {
 
     return {
       linea: indice + 1,
-      codigo: construirCampo(it.codigo ?? null, celdas, { ...ctxBase, campo: `${prefijo}.codigo` }),
-      nombre: construirCampo(it.nombre ?? null, celdas, { ...ctxBase, campo: `${prefijo}.nombre` }),
+      codigo: construirCampo(it.codigo ?? null, celdasParaItems, {
+        ...ctxBase,
+        campo: `${prefijo}.codigo`
+      }),
+      nombre: construirCampo(it.nombre ?? null, celdasParaItems, {
+        ...ctxBase,
+        campo: `${prefijo}.nombre`
+      }),
       cantidad: campoCantidad,
-      unidad: construirCampo(it.unidad ?? null, celdas, { ...ctxBase, campo: `${prefijo}.unidad` }),
+      unidad: construirCampo(it.unidad ?? null, celdasParaItems, {
+        ...ctxBase,
+        campo: `${prefijo}.unidad`
+      }),
       precio_unitario: campoPrecio,
       total: campoTotal
     };
@@ -342,6 +383,7 @@ export async function extraerFactura(entrada, opciones = {}) {
     origen: {
       archivo: nombreArchivo,
       formato,
+      formato_original: formatoOriginal,
       bytes: buffer.length,
       motor: 'qvac',
       modelo_ocr: 'OCR_LATIN (ggml-ocr)',

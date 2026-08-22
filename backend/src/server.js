@@ -3,7 +3,7 @@
  * Servidor HTTP de InvoiceGuard. Une el Modulo A (extraccion con QVAC) con el
  * Modulo B (matching determinisitico) y responde el contrato plano del frontend.
  *
- *   POST /reconcile   multipart/form-data, campo "factura" (PNG/JPEG/BMP)
+ *   POST /reconcile   multipart/form-data, campo "factura" (PNG/JPEG/BMP/PDF)
  *   GET  /health      estado del servidor, la orden de demo y los modelos
  *
  * FLUJO, sin atajos:

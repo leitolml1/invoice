@@ -274,6 +274,7 @@ export function normalizarNumero(texto) {
  * @typedef {object} FilaItem
  * @property {number} y
  * @property {Record<string, string>} valores por rol
+ * @property {Record<string, number>} confianzas confianza minima de las celdas que forman cada valor
  * @property {number} confianza_min
  */
 
@@ -283,7 +284,7 @@ export function normalizarNumero(texto) {
  *
  * @param {import('./layout.js').Fila} fila
  * @param {Banda[]} bandas
- * @returns {Record<string, string>}
+ * @returns {{ valores: Record<string, string>, confianzas: Record<string, number> }}
  */
 export function asignarFila(fila, bandas) {
   /** @type {Record<string, import('./layout.js').Celda[]>} */
@@ -296,16 +297,19 @@ export function asignarFila(fila, bandas) {
 
   /** @type {Record<string, string>} */
   const valores = {};
-  for (const [rol, celdas] of Object.entries(porRol)) {
-    const texto = celdas
-      .sort((a, b) => a.x1 - b.x1)
+  /** @type {Record<string, number>} */
+  const confianzas = {};
+  for (const [rol, celdasDelRol] of Object.entries(porRol)) {
+    const ordenadas = [...celdasDelRol].sort((a, b) => a.x1 - b.x1);
+    const texto = ordenadas
       .map((c) => c.texto.trim())
       .join(' ')
       .replace(/\s+/g, ' ')
       .trim();
     valores[rol] = ROLES_NUMERICOS.has(rol) ? normalizarNumero(texto) : texto;
+    confianzas[rol] = ordenadas.reduce((min, c) => Math.min(min, c.confianza), 1);
   }
-  return valores;
+  return { valores, confianzas };
 }
 
 /**
@@ -337,7 +341,7 @@ export function extraerFilasItems(filas, indiceEncabezado, bandas) {
 
   for (let i = indiceEncabezado + 1; i < filas.length; i++) {
     const fila = filas[i];
-    const valores = asignarFila(fila, bandas);
+    const { valores, confianzas } = asignarFila(fila, bandas);
 
     const tieneIdentidad = Boolean(valores.codigo || valores.descripcion);
     const tieneMonto = Boolean(valores.total || valores.precio_unitario);
@@ -346,7 +350,7 @@ export function extraerFilasItems(filas, indiceEncabezado, bandas) {
     if (!tieneIdentidad || !tieneMonto) continue;
     if (pareceTotales(fila) && !valores.codigo) break;
 
-    items.push({ y: fila.y, valores, confianza_min: fila.confianza_min });
+    items.push({ y: fila.y, valores, confianzas, confianza_min: fila.confianza_min });
   }
 
   return items;
