@@ -440,6 +440,12 @@ td {
   border-bottom: 1px solid var(--line);
 }
 
+.cell--missing {
+  color: var(--review);
+  font-weight: 700;
+  cursor: help;
+}
+
 th {
   color: var(--muted);
   font-weight: 600;

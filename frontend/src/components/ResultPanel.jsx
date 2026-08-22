@@ -65,7 +65,15 @@ export default function ResultPanel({ result }) {
                 {factura.items.map((item, index) => (
                   <tr key={`${item.nombre}-${index}`}>
                     <td>{item.nombre}</td>
-                    <td>{item.cantidad}</td>
+                    <td>
+                      {item.cantidad === null ? (
+                        <span className="cell--missing" title={t.qtyUnknown}>
+                          —
+                        </span>
+                      ) : (
+                        item.cantidad
+                      )}
+                    </td>
                     <td>{formatMoney(item.precio_unitario)}</td>
                     <td>{formatMoney(item.total)}</td>
                   </tr>

@@ -1,7 +1,7 @@
 /**
  * @typedef {Object} FacturaItem
  * @property {string} nombre
- * @property {number} cantidad
+ * @property {number|null} cantidad no se pudo leer del OCR; needs_review general viene en true
  * @property {number} precio_unitario
  * @property {number} total
  */
