@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "node dev-all.mjs",
     "dev:ui": "vite",
-    "server": "node server.js",
+    "server": "node ../backend/src/server.js",
     "build": "tsc -b && vite build",
     "lint": "oxlint",
     "preview": "vite preview",

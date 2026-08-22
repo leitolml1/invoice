@@ -1,0 +1,58 @@
+{
+  "_comentario": [
+    "FIXTURE DE DEMO. Orden de compra fija que usa POST /reconcile mientras el",
+    "frontend no tenga selector de orden. Limitacion conocida, documentada en el README.",
+    "",
+    "Esta orden es la fuente de verdad contra la que se comparan las facturas de",
+    "backend/test-assets/. Los desvios estan puestos a proposito para que el demo",
+    "muestre discrepancias reales:",
+    "  - SKU-100: la orden pide 10 unidades, la factura cobra 12.",
+    "  - SKU-300: la orden acordo 45.00 por unidad, la factura cobra 49.00.",
+    "  - SKU-200 coincide exactamente, para que se vea que no todo se marca."
+  ],
+  "schema_version": "1.0.0",
+  "orden_id": "PO-2026-0001",
+  "proveedor": {
+    "nombre": "Distribuidora del Sur S.A.",
+    "identificacion_fiscal": "30-71234567-9"
+  },
+  "fecha_emision": "2026-07-01",
+  "fecha_entrega_esperada": "2026-07-20",
+  "moneda": "USD",
+  "condiciones_pago": "30 dias fecha factura",
+  "items": [
+    {
+      "linea": 1,
+      "codigo": "SKU-100",
+      "descripcion": "Cable UTP Cat6 305m",
+      "cantidad": 10,
+      "unidad": "u",
+      "precio_unitario": 85.5,
+      "importe_linea": 855.0
+    },
+    {
+      "linea": 2,
+      "codigo": "SKU-200",
+      "descripcion": "Switch 24 puertos Gigabit",
+      "cantidad": 2,
+      "unidad": "u",
+      "precio_unitario": 210.0,
+      "importe_linea": 420.0
+    },
+    {
+      "linea": 3,
+      "codigo": "SKU-300",
+      "descripcion": "Patch panel 24 bocas",
+      "cantidad": 4,
+      "unidad": "u",
+      "precio_unitario": 45.0,
+      "importe_linea": 180.0
+    }
+  ],
+  "totales": {
+    "subtotal": 1455.0,
+    "impuestos": 305.55,
+    "descuentos": 0,
+    "total": 1760.55
+  }
+}

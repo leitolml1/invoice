@@ -5,8 +5,27 @@
  * Todo corre 100% local y sin dependencias externas: la Capa 1 es logica pura.
  */
 
-// --- Orquestador ---
+// --- Orquestador (Modulo B) ---
 export { reconciliar, reconciliarCrudo, VERSION_ESQUEMA_RESULTADO } from './matching/engine.js';
+
+// --- Extraccion (Modulo A): OCR + estructuracion con QVAC, 100% local ---
+export { extraerFactura, detectarFormato, VERSION_EXTRACCION } from './extraction/extract.js';
+export { ejecutarOcr, cargarModeloOcr, liberarModeloOcr, CONFIG_OCR_POR_DEFECTO } from './extraction/ocrEngine.js';
+export {
+  estructurar,
+  cargarModeloEstructurador,
+  liberarModeloEstructurador,
+  MODELOS_ESTRUCTURADOR
+} from './extraction/structurer.js';
+export { ErrorExtraccion, ErrorFormatoNoSoportado, ErrorModelo } from './extraction/errors.js';
+
+// --- Contrato con el frontend (aplanado) ---
+export {
+  aplanarResultado,
+  aplanarFactura,
+  aplanarDiscrepancia,
+  MAPA_SEVERIDAD
+} from './api/flatten.js';
 
 // --- Normalizadores de entrada ---
 export { parsearFacturaExtraida, VERSION_ESQUEMA_FACTURA } from './schema/invoice.js';

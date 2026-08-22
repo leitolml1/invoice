@@ -13,10 +13,16 @@
     ".": "./src/index.js"
   },
   "scripts": {
-    "reconcile": "node src/cli.js reconcile"
+    "start": "node src/server.js",
+    "server": "node src/server.js",
+    "reconcile": "node src/cli.js reconcile",
+    "health": "node -e \"fetch('http://127.0.0.1:3001/health').then(r=>r.json()).then(o=>console.log(JSON.stringify(o,null,2)))\""
   },
   "dependencies": {
-    "@qvac/sdk": "0.17.1"
+    "@qvac/sdk": "0.17.1",
+    "cors": "2.8.6",
+    "express": "5.2.1",
+    "multer": "2.2.0"
   },
   "comentario_dependencias": "Capa 1 (reglas determinisiticas) no tiene dependencias. Capa 2 (semantica) usa @qvac/sdk via import dinamico opcional: instalar con `npm i @qvac/sdk` y correr con --ai."
 }
