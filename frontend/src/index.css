@@ -782,12 +782,13 @@ th {
   padding: 0 16px;
 }
 
-/* El shrink: de tamanio completo a 0.82 con un fade leve, atado al
-   progreso de scroll. Solo escala y opacidad, ambas compositables. */
+/* El shrink: de tamanio completo a 0.4 (queda como un logo chico antes de
+   que .landing lo tape del todo) con fade, atado al progreso de scroll.
+   Solo escala y opacidad, ambas compositables. */
 @keyframes hero-shrink {
   to {
-    transform: scale(0.82);
-    opacity: 0.55;
+    transform: scale(0.4);
+    opacity: 0.4;
   }
 }
 
